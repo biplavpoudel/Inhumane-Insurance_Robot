@@ -13,6 +13,7 @@ def consume_traffic_data():
 
 def process_traffic_data():
     # Load JSON data as file
+    #Warning: For Local Developemnt Only!!
     with open(r'output\work-items-out\workitems.json', 'r') as file:
         workitems_data = json.load(file)
 
