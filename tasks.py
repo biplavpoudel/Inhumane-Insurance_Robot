@@ -1,7 +1,9 @@
+from robocorp import workitems
 from robocorp.tasks import task
 from RPA.HTTP import HTTP
 from RPA.JSON import JSON
 from RPA.Tables import Tables
+import requests
 
 http = HTTP()
 json = JSON()
@@ -30,14 +32,7 @@ def produce_traffic_data():
     filtered_data = filter_and_sort_traffic_data(traffic_data)
     filtered_data = get_latest_data_by_country(filtered_data) #list, not a table!
     payloads = create_work_item_payloads(filtered_data)
-
-@task
-def consume_traffic_data():
-    """
-    Inhuman Insurance, Inc. Artificial Intelligence System robot.
-    Consumes traffic data work items.
-    """
-    print("consume")
+    save_work_item_payloads(payloads)
 
 def load_traffic_data_as_table():
     json_data = json.load_json_from_file(TRAFFIC_JSON_FILE_PATH)
@@ -69,3 +64,34 @@ def create_work_item_payloads(traffic_data):
         )
         payloads.append(payload)
     return payloads
+
+def save_work_item_payloads(payloads):
+    for payload in payloads:
+            variables = dict(traffic_data=payload)
+            workitems.outputs.create(variables)
+            
+@task
+def consume_traffic_data():
+    """
+    Inhuman Insurance, Inc. Artificial Intelligence System robot.
+    Consumes traffic data work items.
+    """
+    process_traffic_data()
+
+def process_traffic_data():
+    for item in workitems.inputs:
+        traffic_data = item.payload["traffic_data"]
+        # valid = validate_traffic_data(traffic_data)
+        # if valid:
+        #     post_traffic_data_to_sales_system(traffic_data)
+        if len(traffic_data["country"]) == 3:
+            status = post_traffic_data_to_sales_system(traffic_data)
+            if status == 200:
+                item.done()
+
+def post_traffic_data_to_sales_system(traffic_data):
+    url = "https://robocorp.com/inhuman-insurance-inc/sales-system-api"
+    response = requests.post(url,json = traffic_data)
+    # response.raise_for_status
+    return response.status_code
+
